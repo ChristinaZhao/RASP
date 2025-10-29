@@ -19,7 +19,7 @@ Save out 8 blocks of envelopes
 import numpy as np
 import pandas as pd
 from scipy.io import wavfile
-from scipy.signal import gammatone, lfilter, hilbert
+from scipy.signal import gammatone, hilbert,filtfilt
 import json
 
 
@@ -42,17 +42,13 @@ def get_env (fs, audio_signal):
     envs = []
     for cf in center_frequencies:
         b, a = gammatone(cf, ftype='fir', fs=float(fs)) # Get filter coefficients
-        filtered_signal = lfilter(b, a, audio_signal) # Apply filter
+        filtered_signal = filtfilt(b, a, audio_signal) # Apply filter changed from lfilter to filtfilt 10/14/2025 suggested by Yi
         # hibert transform
         env = np.abs(hilbert(filtered_signal))
         filtered_signals.append(filtered_signal)
         envs.append(env)
 
     envelope = np.mean(np.asarray(envs), axis = 0)
-    
-    # band pass filter between 1-10 Hz
-    
-    # resample down to 250hz
     
     return envelope
 
@@ -84,16 +80,19 @@ for i in np.arange(1,csvFile['Block Number'].max(axis = 0)+1):
             fs_b, bg_audio = wavfile.read(root_path + 'ScaledSpeakers/' + block.loc[index,'Background Wav'] + '.wav') 
         else: print("something is wrong!")
         
-        tar_env = get_env(fs_t,target_audio)
-        bg_env = get_env(fs_b,bg_audio)
+        #tar_env = get_env(fs_t,target_audio)
+        #bg_env = get_env(fs_b,bg_audio)
+        
+        tar_env = np.abs(hilbert(target_audio))  # broadband env 10/14/25 per Yi suggestion
+        bg_env = np.abs(hilbert(bg_audio))
         envs_ta[index] = tar_env 
         envs_bg[index] = bg_env    
         
     envs_ta = [arr.tolist() for arr in envs_ta] # change into list in list for json saving
     envs_bg = [arr.tolist() for arr in envs_bg]
     # write the lists into txt files
-    file_target = root_path + 'env_target_block' + str(i) + '.txt'
-    file_background = root_path + 'env_background_block' + str(i) + '.txt'
+    file_target = root_path + 'env_bb_target_block' + str(i) + '.txt'
+    file_background = root_path + 'env_bb_background_block' + str(i) + '.txt'
     
     with open(file_target, "w") as f:
         json.dump(envs_ta, f)
