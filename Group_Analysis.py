@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 # loop to read in results
 # check the % of trials thrown out, if > 10% then throw out the participant
 
-participants = ['rasp_02','rasp_04','rasp_09','rasp_13','rasp_23','rasp_26','rasp_28','rasp_29','rasp_31','rasp_37','rasp_38','rasp_39','rasp_40','rasp_46','rasp_50', 'rasp_57','rasp_59', 'rasp_61', 'rasp_62','rasp_67']
+participants = ['rasp_02','rasp_04','rasp_09','rasp_13','rasp_23','rasp_26','rasp_28','rasp_29','rasp_31','rasp_37','rasp_38','rasp_39','rasp_46','rasp_50', 'rasp_57','rasp_59', 'rasp_61', 'rasp_62','rasp_67']
 
 # remove rasp40
 #%% pulling group together
@@ -32,15 +32,19 @@ group_ta = pd.DataFrame()
 group_bg = pd.DataFrame()
 group_diff = pd.DataFrame()
 
+pnans = []
+
 for p in participants:
-    file_name_ta = root_path + 'data/RASP_' + p[5:7] + '/'+ p + '_' + metric + '_' + stream[0] + '.csv'
-    file_name_bg = root_path + 'data/RASP_' + p[5:7] + '/'+ p + '_' + metric + '_' + stream[1] + '.csv'
+    file_name_ta = root_path + 'data/RASP_' + p[5:7] + '/'+ p + '_' + metric + '_' + stream[0] + '_new.csv'
+    file_name_bg = root_path + 'data/RASP_' + p[5:7] + '/'+ p + '_' + metric + '_' + stream[1] + '_new.csv'
     df_ta = pd.read_csv(file_name_ta,index_col=0)
     df_bg = pd.read_csv(file_name_bg,index_col=0)
     pnan = df_ta.iloc [:,0:-1].isna().sum()/(df_ta.iloc[:,0:-1].isna().sum() + df_ta.iloc[:,0:-1].count())
+    
     # check amount of NaN in EEG
     if (pnan <= 0.1).all() == 1:  #only include if it's less than 10% rejection
         #len(bad_channels[p[5:7]])>0:
+        pnans.append(1-pnan.mean())
         diff = df_ta.iloc[:,0:-1]-df_bg.iloc[:,0:-1]  #target stream - background stream
             # df_ta[bad_channels[p[5:7]]] = np.nan #chaged 9/16 as bad channels were intrapolated
             # df_bg[bad_channels[p[5:7]]] = np.nan
@@ -68,14 +72,14 @@ sem_by_condition = participant_avg.groupby('Condition').sem()
 
 # Prepare data for plotting
 conditions = condition_avg.index
-mean_scores = condition_avg['CP5'] # Using Cz for now
-sem_scores = sem_by_condition['CP5']
+mean_scores = condition_avg['PO3'] # Using Cz for now
+sem_scores = sem_by_condition['PO3']
 
 # Create the bar plot with error bars
 plt.bar(conditions, mean_scores, yerr=sem_scores, capsize=5, ecolor='black')
 plt.xlabel('Condition')
 plt.ylabel(metric)
-plt.title('Target - Background Stream')
+plt.title('Target - Background Streaam')
 plt.show()
 
 #%% topomap
@@ -94,18 +98,28 @@ evoked.set_montage(montage)
 
 import matplotlib.pyplot as plt
 
-# Plot topomaps and get the figure and axes
-fig = evoked.plot_topomap(times = [0,1,2], scalings = dict(eeg = 1),sphere = 'eeglab',vlim=(0.03,0.045),cnorm=None,colorbar=False)
+# Plot topomaps
+fig = evoked.plot_topomap(
+    times=[0, 1, 2],
+    scalings=dict(eeg=1),
+    sphere='eeglab',
+    vlim=(-0.01, 0.01),
+    cnorm=None,
+    colorbar=True,
+    cbar_fmt='%.3f',
+    units = 'Delta PLV',
+    show=False
+)
 
-# Custom titles
-titles = ["BA", "CT", "TA"]
+# Adjust figure size explicitly (in inches)
+fig.set_size_inches(8, 4)   # 8 inches × 6 inches ≈ 800 × 600 pixels at 100 dpi
 
-# Apply titles to each subplot
-for ax, title in zip(fig.axes, titles):
+# Set custom titles for each topomap
+titles = ['BRD', 'NRD', 'TRD']
+for ax, title in zip(fig.axes[:3], titles):
     ax.set_title(title, fontsize=12)
 
 plt.show()
-
 
 #%% load in the behavior data and correlate with EEG
 behavior = pd.read_csv('/mnt/storage/RASP/Behavioral Analysis/Results/participant_by_condition.csv')
@@ -127,7 +141,7 @@ merged = pd.merge(participant_avg, behavior_melted, on = ['participant','Conditi
 import seaborn as sns
 
 plt.figure(figsize=(8, 6))
-sns.scatterplot(data=merged, x='CP5', y='behaviorscore', hue='Condition', s=100) # s controls marker size
+sns.scatterplot(data=merged, x='F6', y='behaviorscore', hue='Condition', s=100) # s controls marker size
 plt.title('Scatter Plot of C1 vs Behavior by Condition')
 plt.xlabel('Difference between Target and Background at Cz')
 plt.ylabel('Behavior Accuracy')
@@ -162,9 +176,9 @@ for condition in df['Condition'].unique():
 merged_stat = merged.reset_index()
 
 # write them out for R
-merged_stat.to_csv('/mnt/storage/RASP/results/merged_stat_diff_gamma_plvs.csv')
+merged_stat.to_csv('/mnt/storage/RASP/results/merged_stat_bg_gamma_plvs.csv')
 eeg_stat = participant_avg.reset_index()
-eeg_stat.to_csv('/mnt/storage/RASP/results/eeg_stat_diff_gamma_plvs.csv')
+eeg_stat.to_csv('/mnt/storage/RASP/results/eeg_stat_bg_gamma_plvs.csv')
 
 #%% trying to do some preliminary statistics
 from statsmodels.stats.anova import AnovaRM
@@ -175,56 +189,56 @@ for ch in stats_data.columns[2:]:
     print(aov_table)
 
 #%% Permutation
-import mne
-import scipy
+# import mne
+# import scipy
 
-eeg_stat = participant_avg.reset_index()
-X1 = eeg_stat[eeg_stat['Condition'] == 'BA'].iloc[:,2:].to_numpy() # BA
-X2 = eeg_stat[eeg_stat['Condition'] == 'CT'].iloc[:,2:].to_numpy() # CT
-X3 = eeg_stat[eeg_stat['Condition'] == 'TA'].iloc[:,2:].to_numpy() # TA
-X = [X1, X3]
+# eeg_stat = participant_avg.reset_index()
+# X1 = eeg_stat[eeg_stat['Condition'] == 'BA'].iloc[:,2:].to_numpy() # BA
+# X2 = eeg_stat[eeg_stat['Condition'] == 'CT'].iloc[:,2:].to_numpy() # CT
+# X3 = eeg_stat[eeg_stat['Condition'] == 'TA'].iloc[:,2:].to_numpy() # TA
+# X = [X1, X2, X3]
 
-raw = mne.io.Raw('/mnt/storage/RASP/data/RASP_02/rasp_02_ssp_ica_intrabad_preprocessed.fif')
-adjacency, ch_names = mne.channels.find_ch_adjacency(raw.info, ch_type = 'eeg')
+# raw = mne.io.Raw('/mnt/storage/RASP/data/RASP_02/rasp_02_ssp_ica_intrabad_preprocessed.fif')
+# adjacency, ch_names = mne.channels.find_ch_adjacency(raw.info, ch_type = 'eeg')
 
-# We are running an F test, so we look at the upper tail
-# see also: https://stats.stackexchange.com/a/73993
-tail = 1
+# # We are running an F test, so we look at the upper tail
+# # see also: https://stats.stackexchange.com/a/73993
+# tail = 1
 
-# We want to set a critical test statistic (here: F), to determine when
-# clusters are being formed. Using Scipy's percent point function of the F
-# distribution, we can conveniently select a threshold that corresponds to
-# some alpha level that we arbitrarily pick.
-alpha_cluster_forming = 0.1
+# # We want to set a critical test statistic (here: F), to determine when
+# # clusters are being formed. Using Scipy's percent point function of the F
+# # distribution, we can conveniently select a threshold that corresponds to
+# # some alpha level that we arbitrarily pick.
+# alpha_cluster_forming = 0.1
 
-# For an F test we need the degrees of freedom for the numerator
-# (number of conditions - 1) and the denominator (number of observations
-# - number of conditions):
-n_conditions = len(X)
-n_observations = len(X[0])
-dfn = n_conditions - 1
-dfd = n_observations - n_conditions
+# # For an F test we need the degrees of freedom for the numerator
+# # (number of conditions - 1) and the denominator (number of observations
+# # - number of conditions):
+# n_conditions = len(X)
+# n_observations = len(X[0])
+# dfn = n_conditions - 1
+# dfd = n_observations - n_conditions
 
-# Note: we calculate 1 - alpha_cluster_forming to get the critical value
-# on the right tail
-f_thresh = scipy.stats.f.ppf(1 - alpha_cluster_forming, dfn=dfn, dfd=dfd)
+# # Note: we calculate 1 - alpha_cluster_forming to get the critical value
+# # on the right tail
+# f_thresh = scipy.stats.f.ppf(1 - alpha_cluster_forming, dfn=dfn, dfd=dfd)
 
-# run the cluster based permutation analysis
-cluster_stats = mne.stats.spatio_temporal_cluster_test(
-    X,
-    n_permutations=5000,
-    threshold=f_thresh,  # doing TFCE instead
-    tail=tail,
-    n_jobs=None,
-    buffer_size=None,
-    adjacency=adjacency,
-    seed = 12345
-)
+# # run the cluster based permutation analysis
+# cluster_stats = mne.stats.spatio_temporal_cluster_test(
+#     X,
+#     n_permutations=5000,
+#     threshold=f_thresh,  # doing TFCE instead
+#     tail=tail,
+#     n_jobs=None,
+#     buffer_size=None,
+#     adjacency=adjacency,
+#     seed = 12345
+# )
 
-F_obs, clusters, p_values, _ = cluster_stats
+# F_obs, clusters, p_values, _ = cluster_stats
 
-ch_names_array = np.array(ch_names)
-ch_names_array[np.where(p_values<0.05)[0]]
+# ch_names_array = np.array(ch_names)
+# ch_names_array[np.where(p_values<0.05)[0]]
 
 # import pickle
 

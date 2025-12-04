@@ -59,7 +59,7 @@ participants = {'rasp_02': [4, 3, 6, 7, 8, 5, 2, 1],
 #%%
 root_path = '/mnt/storage/RASP/'
 
-participant = 'rasp_67'
+participant = 'rasp_62'
 #%% there should be a look up table for block seq by participant ID
 
 block_seq = participants[participant] # sequence of blocks played for this participant
@@ -215,19 +215,19 @@ for d in range(len(drops)):
 #%%
 cohs_results = pd.DataFrame(cohs,columns = epochs_select_resample.info['ch_names'])
 cohs_results['Condition'] = flat_condition
-cohs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_cohs_ta.csv')
+cohs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_cohs_ta_new.csv')
 
 plvs_results = pd.DataFrame(plvs,columns = epochs_select_resample.info['ch_names'])
 plvs_results['Condition'] = flat_condition
-plvs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_plvs_ta.csv')
+plvs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_plvs_ta_new.csv')
 
 wplis_results = pd.DataFrame(wplis,columns = epochs_select_resample.info['ch_names'])
 wplis_results['Condition'] = flat_condition
-wplis_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_wplis_ta.csv')
+wplis_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_wplis_ta_new.csv')
 
 xcorrs_results=pd.DataFrame (xcorrs, columns = epochs_select_resample.info['ch_names'])    
 xcorrs_results['Condition'] = flat_condition
-xcorrs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_xcorrs_ta.csv')
+xcorrs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_xcorrs_ta_new.csv')
 #%% calculate connectivity measures for bg stream
 envs = envs_bg
 connectivity_methods = ['coh', 'plv','wpli']
@@ -274,7 +274,7 @@ for i in range(len(envs)):
     #con = mne_connectivity.spectral_connectivity_time(data, freqs = freqs, fmin=1, fmax = 10, sfreq = 250, mode = 'multitaper', method = connectivity_methods)
     
     ## more read on the doc
-    con = mne_connectivity.spectral_connectivity_time(scaled_data, freqs = freqs, fmax = 10, sfreq = 250, mode = 'multitaper', n_cycles = 4, method = connectivity_methods, n_jobs = 5)
+    con = mne_connectivity.spectral_connectivity_time(scaled_data, freqs = freqs, fmax = 10, sfreq = 250, mode = 'multitaper', n_cycles = 5, method = connectivity_methods, n_jobs = 5) 
     
     
     coh = np.squeeze(con[0].get_data(output = 'dense')[:,-1,:,:].mean(axis=2)[:,0:-1])
@@ -309,19 +309,19 @@ for d in range(len(drops)):
 #%%
 cohs_results = pd.DataFrame(cohs,columns = epochs_select_resample.info['ch_names'])
 cohs_results['Condition'] = flat_condition
-cohs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_cohs_bg.csv')
+cohs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_cohs_bg_new.csv')
 
 plvs_results = pd.DataFrame(plvs,columns = epochs_select_resample.info['ch_names'])
 plvs_results['Condition'] = flat_condition
-plvs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_plvs_bg.csv')
+plvs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_plvs_bg_new.csv')
 
 wplis_results = pd.DataFrame(wplis,columns = epochs_select_resample.info['ch_names'])
 wplis_results['Condition'] = flat_condition
-wplis_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_wplis_bg.csv')
+wplis_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_wplis_bg_new.csv')
 
 xcorrs_results=pd.DataFrame (xcorrs, columns = epochs_select_resample.info['ch_names'])    
 xcorrs_results['Condition'] = flat_condition
-xcorrs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_xcorrs_bg.csv')
+xcorrs_results.to_csv(root_path + '/data/RASP_' + participant[5:7] + '/'+ participant + '_xcorrs_bg_new.csv')
 #%% sort by conditions
 #grouped_results = wplis_results.groupby('Condition').agg('mean')
 # #%% do mTRF data prep
