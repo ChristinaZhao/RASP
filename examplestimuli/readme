@@ -1,5 +1,4 @@
-# 7 different example stimuli are included in this folder
-File PNM055_01-01.wav : Target speaker with no rhythm distortion
-FIle alt_PNM055_01-01.wav: Target speaker with rhythm distortion
-File PNM079_22-01.wav: Background speaker with no rhythm distortion
-File alt_PNM079_022-01.wav: Background speaker with rhythm distortion
+PNM055 is the Target Speaker
+PNM079 is the Background Speaker
+alt_ denotes the rhythmic distorted file
+One example for each of the three conditions are included in the folder.
